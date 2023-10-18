@@ -45,5 +45,5 @@ class SolveNQueen(object):
 
 
 if __name__ == "__main__":
-    solve = SolveNQueen(8, filename="../result/solve8queen.txt")
+    solve = SolveNQueen(8, filename="./solve8queen.txt")
     print(f"一共有{solve.getCount()}种解法")
