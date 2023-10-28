@@ -1,26 +1,23 @@
 # -*- encoding: utf-8 -*-
 import numpy as np
 import pandas as pd
-from tensorboardX import SummaryWriter
-from matplotlib import pyplot as plt
+from bayes_opt import BayesianOptimization
 
 class TSP(object):
     def __init__(self, c_rate, m_rate, pop_size, iteration=500, seed=2023):
         self.cities = np.array([])  # 城市数组
         self.cities_name = np.array([])
         self.city_size = -1  # 标记城市数目
-        self.pop_size = int(pop_size)  # 种群大小
+        self.pop_size = int(pop_size)    # 种群大小
         self.fitness = np.zeros(self.pop_size)  # 种群适应度
-        self.c_rate = c_rate  # 交叉阈值
-        self.m_rate = m_rate  # 突变阈值
+        self.c_rate = c_rate    # 交叉阈值
+        self.m_rate = m_rate    # 突变阈值
         self.iteration = iteration  # 迭代次数
-        self.best_dist = -1  # 最优距离
-        self.best_gene = []
-        np.random.seed(seed)  # 随机种子
+        self.best_dist = -1 # 最优距离
+        np.random.seed(seed)    # 随机种子
 
         self.init()  # 初始化
         self.evolution()  # 进化
-        self.draw()  # 绘制
 
     def init(self):
         self.data = pd.read_csv("eil51.txt", delimiter=" ", header=None).values
@@ -32,7 +29,7 @@ class TSP(object):
 
     def evolution(self):
         # 主程序：迭代进化种群
-        writer = SummaryWriter()
+
         for i in range(self.iteration):
             best_f_index = np.argmax(self.fitness)
             worst_f_index = np.argmin(self.fitness)
@@ -48,7 +45,6 @@ class TSP(object):
 
             else:
                 self.pop[worst_f_index] = self.best_gene
-            print("gen:%d evo,best dist :%s" % (i, self.best_dist))
 
             self.pop = self.select_pop4(self.pop)  # 选择淘汰种群
             self.fitness = self.get_fitness(self.pop)  # 计算种群适应度
@@ -59,8 +55,7 @@ class TSP(object):
                     self.pop[j] = self.mutate(self.pop[j])  # 突变种群中第j个体的基因
             self.best_gene = self.EO(self.best_gene)  # 极值优化，防止收敛局部最优
             self.best_dist = self.gen_distance(self.best_gene)  # 记录最优值
-            writer.add_scalar("fitness", self.best_dist, i)
-        writer.close()
+
 
     def create_pop(self, size):
         pop = [np.random.permutation(self.city_size) for _ in range(size)]
@@ -132,29 +127,6 @@ class TSP(object):
                 pop[i, :] = pi[:]
         return pop
 
-    def select_pop2(self, pop):
-        # 选择种群，优胜劣汰，策略2：轮盘赌，适应度低的替换的阈值大
-        probility = self.fitness / self.fitness.sum()
-        idx = np.random.choice(
-            np.arange(self.pop_size), size=self.pop_size, replace=True, p=probility
-        )
-        n_pop = pop[idx, :]
-        return n_pop
-
-    def select_pop3(self, pop):
-        # 选择种群，优胜劣汰，锦标赛选择
-        tournament_size = 3  # 锦标赛的大小，即每次选择的个体数量
-        selected_pop = []
-
-        for _ in range(self.pop_size):
-            tournament = np.random.choice(
-                range(self.pop_size), size=tournament_size, replace=False
-            )  # 随机选择tournament_size个个体作为锦标赛参与者
-            best_f_index = max(
-                tournament, key=lambda x: self.fitness[x]
-            )  # 选择适应度最高的个体作为胜者
-            selected_pop.append(pop[best_f_index].copy())  # 将胜者加入选中的个体中
-        return np.array(selected_pop)
 
     def select_pop4(self, pop):
         # 选择种群，优胜劣汰，锦标赛选择与精英保留策略的结合
@@ -164,15 +136,12 @@ class TSP(object):
         selected_pop = [elite]  # 将精英个体加入选中的个体中
 
         for _ in range(self.pop_size - 1):
-            tournament = np.random.choice(
-                range(self.pop_size), size=tournament_size, replace=False
-            )  # 随机选择tournament_size个个体作为锦标赛参与者
-            best_f_index = max(
-                tournament, key=lambda x: self.fitness[x]
-            )  # 选择适应度最高的个体作为胜者
+            tournament = np.random.choice(range(self.pop_size), size=tournament_size, replace=False)  # 随机选择tournament_size个个体作为锦标赛参与者
+            best_f_index = max(tournament, key=lambda x: self.fitness[x])  # 选择适应度最高的个体作为胜者
             selected_pop.append(pop[best_f_index].copy())  # 将胜者加入选中的个体中
 
         return np.array(selected_pop)
+
 
     def cross(self, part1, part2):
         """交叉p1,p2的部分基因片段"""
@@ -194,6 +163,7 @@ class TSP(object):
         if newGene.shape[0] != self.city_size:
             print("c error")
             return self.creat_pop(1)
+            # return part1
         return newGene
 
     def mutate(self, gene):
@@ -249,52 +219,3 @@ class TSP(object):
         sum_squared_diff = np.sum(squared_diff)
         distance = np.sqrt(sum_squared_diff)
         return distance
-
-    def draw(self):
-        x = [city[1] for city in self.data]
-        y = [city[2] for city in self.data]
-
-        # 绘制散点图
-        plt.scatter(x, y)
-
-        # 添加城市编号标签
-        for city in self.data:
-            plt.annotate(
-                city[0],
-                (city[1], city[2]),
-                textcoords="offset points",
-                xytext=(0, 10),
-                ha="center",
-            )
-
-        # 绘制连线
-        for i in range(len(self.best_gene) - 1):
-            city1 = self.best_gene[i]
-            city2 = self.best_gene[i + 1]
-            x1, y1 = self.data[city1][1], self.data[city1][2]
-            x2, y2 = self.data[city2][1], self.data[city2][2]
-            plt.plot([x1, x2], [y1, y2], "r-")
-
-        # 连接首尾城市
-        city1 = self.best_gene[-1]
-        city2 = self.best_gene[0]
-        x1, y1 = self.data[city1][1], self.data[city1][2]
-        x2, y2 = self.data[city2][1], self.data[city2][2]
-        plt.plot([x1, x2], [y1, y2], "r-")
-
-        # 设置图形标题和坐标轴标签
-        plt.title("City Visualization")
-        plt.xlabel("X-coordinate")
-        plt.ylabel("Y-coordinate")
-
-        # 显示图形
-        plt.show()
-
-
-if __name__ == "__main__":
-    c_rate = 0.3986  # 交叉阈值     0.4075 0.3986
-    m_rate = 0.253  # 突变阈值    0.4345 0.253
-    pop_size = 83.73  # 种群大小    84.64 83.73
-    iteration = 1200  # 迭代次数
-    seed = 2023  # 随机种子
-    tsp = TSP(c_rate, m_rate, pop_size, iteration, seed)
