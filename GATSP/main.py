@@ -15,7 +15,7 @@ class TSP(object):
         self.m_rate = m_rate  # 突变阈值
         self.iteration = iteration  # 迭代次数
         self.best_dist = -1  # 最优距离
-        self.best_gene = []
+        self.best_gene = [] # 最优路径
         np.random.seed(seed)  # 随机种子
 
         self.init()  # 初始化
