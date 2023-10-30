@@ -9,8 +9,8 @@ class TSP(object):
         """
         初始化旅行商问题求解器
 
-        :param c_rate: 交叉概率阈值
-        :param m_rate: 突变概率阈值
+        :param c_rate: 交叉概率概率
+        :param m_rate: 突变概率概率
         :param pop_size: 种群大小
         :param iteration: 迭代次数，默认为500
         :param seed: 随机种子，默认为2023
@@ -20,8 +20,8 @@ class TSP(object):
         self.city_size = -1  # 标记城市数目
         self.pop_size = int(pop_size)  # 种群大小
         self.fitness = np.zeros(self.pop_size)  # 种群适应度
-        self.c_rate = c_rate  # 交叉阈值
-        self.m_rate = m_rate  # 突变阈值
+        self.c_rate = c_rate  # 交叉概率
+        self.m_rate = m_rate  # 突变概率
         self.iteration = iteration  # 迭代次数
         self.best_dist = -1  # 最优距离
         self.best_gene = []  # 最优路径
@@ -88,7 +88,7 @@ class TSP(object):
             self.best_gene = self.EO(self.best_gene)  # 极值优化，防止收敛局部最优
             self.best_dist = self.gen_distance(self.best_gene)  # 记录最优值
             writer.add_scalar(
-                "fitness", self.best_dist, i
+                "best_dis", self.best_dist, i
             )  # 将当前最优适应度值添加到SummaryWriter对象中
         writer.close()  # 关闭SummaryWriter对象，结束训练过程
 
@@ -179,7 +179,7 @@ class TSP(object):
     #     return pop
     #
     # def select_pop2(self, pop):
-    #     # 选择种群，优胜劣汰，策略2：轮盘赌，适应度低的替换的阈值大
+    #     # 选择种群，优胜劣汰，策略2：轮盘赌，适应度低的替换的概率大
     #     probility = self.fitness / self.fitness.sum()
     #     idx = np.random.choice(
     #         np.arange(self.pop_size), size=self.pop_size, replace=True, p=probility
@@ -377,21 +377,21 @@ class TSP(object):
         plt.ylabel("Y-coordinate")
 
         # 保存图像
-        plt.savefig(f"img/City_{self.pop_size}.png")
+        plt.savefig(f"img/City.png")
 
         # 显示图形
         plt.show()
 
 
 if __name__ == "__main__":
-    c_rate = 0.3986  # 交叉阈值     0.4075 0.3986
-    m_rate = 0.253  # 突变阈值    0.4345 0.253
+    c_rate = 0.3986  # 交叉概率     0.4075 0.3986
+    m_rate = 0.253  # 突变概率    0.4345 0.253
     pop_size = 83.73  # 种群大小    84.64 83.73
     iteration = 1200  # 迭代次数
     seed = 2023  # 随机种子
     tsp = TSP(c_rate, m_rate, pop_size, iteration, seed)
 
-with open(f"results/result_{pop_size}.txt", "w") as f:
+with open(f"results/result.txt", "w") as f:
     count = 0
     for item in tsp.best_gene:
         f.write("%s " % item)
