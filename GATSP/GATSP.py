@@ -1,20 +1,23 @@
-# -*- encoding: utf-8 -*-
+"""
+    与main.py区别仅为console的输出和matplotlib的绘制
+"""
 import numpy as np
 import pandas as pd
 from bayes_opt import BayesianOptimization
+
 
 class TSP(object):
     def __init__(self, c_rate, m_rate, pop_size, iteration=500, seed=2023):
         self.cities = np.array([])  # 城市数组
         self.cities_name = np.array([])
         self.city_size = -1  # 标记城市数目
-        self.pop_size = int(pop_size)    # 种群大小
+        self.pop_size = int(pop_size)  # 种群大小
         self.fitness = np.zeros(self.pop_size)  # 种群适应度
-        self.c_rate = c_rate    # 交叉阈值
-        self.m_rate = m_rate    # 突变阈值
+        self.c_rate = c_rate  # 交叉阈值
+        self.m_rate = m_rate  # 突变阈值
         self.iteration = iteration  # 迭代次数
-        self.best_dist = -1 # 最优距离
-        np.random.seed(seed)    # 随机种子
+        self.best_dist = -1  # 最优距离
+        np.random.seed(seed)  # 随机种子
 
         self.init()  # 初始化
         self.evolution()  # 进化
@@ -55,7 +58,6 @@ class TSP(object):
                     self.pop[j] = self.mutate(self.pop[j])  # 突变种群中第j个体的基因
             self.best_gene = self.EO(self.best_gene)  # 极值优化，防止收敛局部最优
             self.best_dist = self.gen_distance(self.best_gene)  # 记录最优值
-
 
     def create_pop(self, size):
         pop = [np.random.permutation(self.city_size) for _ in range(size)]
@@ -127,7 +129,6 @@ class TSP(object):
                 pop[i, :] = pi[:]
         return pop
 
-
     def select_pop4(self, pop):
         # 选择种群，优胜劣汰，锦标赛选择与精英保留策略的结合
         tournament_size = 3  # 锦标赛的大小，即每次选择的个体数量
@@ -136,12 +137,15 @@ class TSP(object):
         selected_pop = [elite]  # 将精英个体加入选中的个体中
 
         for _ in range(self.pop_size - 1):
-            tournament = np.random.choice(range(self.pop_size), size=tournament_size, replace=False)  # 随机选择tournament_size个个体作为锦标赛参与者
-            best_f_index = max(tournament, key=lambda x: self.fitness[x])  # 选择适应度最高的个体作为胜者
+            tournament = np.random.choice(
+                range(self.pop_size), size=tournament_size, replace=False
+            )  # 随机选择tournament_size个个体作为锦标赛参与者
+            best_f_index = max(
+                tournament, key=lambda x: self.fitness[x]
+            )  # 选择适应度最高的个体作为胜者
             selected_pop.append(pop[best_f_index].copy())  # 将胜者加入选中的个体中
 
         return np.array(selected_pop)
-
 
     def cross(self, part1, part2):
         """交叉p1,p2的部分基因片段"""
