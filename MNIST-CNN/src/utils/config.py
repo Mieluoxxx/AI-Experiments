@@ -1,0 +1,1 @@
+ROOT_PATH='/home/moguw/Github/AI_Introduction_Experiments/MNIST-CNN'

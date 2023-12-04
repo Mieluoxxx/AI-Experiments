@@ -1,0 +1,15 @@
+|- README.md             项目说明
+|- data/                 数据目录
+    |- raw/              原始数据
+    |- processed/        预处理后的数据
+|- src/                  源代码目录  
+    |- models/           模型定义
+    |- utils/            各种utility函数
+    |- preprocessing.py  数据预处理
+    |- train.py          训练脚本
+    |- evaluate.py       评估脚本
+    |- predict.py        预测脚本
+|- saved_models/         保存的模型
+|- logs/                 日志目录  
+|- results/              结果目录
+|- pyproject.toml        环境依赖 

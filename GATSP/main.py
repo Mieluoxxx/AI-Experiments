@@ -8,9 +8,8 @@ class TSP(object):
     def __init__(self, c_rate, m_rate, pop_size, iteration=500, seed=2023):
         """
         初始化旅行商问题求解器
-
         :param c_rate: 交叉概率概率
-        :param m_rate: 突变概率概率
+        :param m_rate: 突变概率概率 
         :param pop_size: 种群大小
         :param iteration: 迭代次数，默认为500
         :param seed: 随机种子，默认为2023
