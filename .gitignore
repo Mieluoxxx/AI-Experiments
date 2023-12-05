@@ -2,3 +2,5 @@
 .vscode
 GATSP/__pycache__
 */data
+**/__pycache__/
+*/wandb
