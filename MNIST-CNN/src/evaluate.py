@@ -1,5 +1,6 @@
 import torch
 import torch.nn.functional as F
+import wandb
 
 def test(model, device, test_loader):
     model.eval()
@@ -21,8 +22,12 @@ def test(model, device, test_loader):
     accuracy = 100.0 * correct / len(test_loader.dataset)
 
 
+    test_metrics  = {"test_loss": test_loss,
+                       "test_accuracy": accuracy}
+    wandb.log({**test_metrics})
+    
     print(
-        "\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n".format(
+        "Test set: Average loss: {:.4f}, Accuracy: {}/{} ({:.2f}%)\n".format(
             test_loss,
             correct,
             len(test_loader.dataset),

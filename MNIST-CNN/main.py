@@ -1,16 +1,23 @@
 import argparse
+import datetime
+import os
+import platform
 import socket
-import wandb
+from tqdm import tqdm
+
 import torch
-from torchvision import transforms
-from torch.optim.lr_scheduler import StepLR
 import torch.optim as optim
+from torch.utils.data import DataLoader, random_split
+from torch.optim.lr_scheduler import StepLR
+from torchvision import transforms
+from torchvision.datasets import MNIST
+
+import wandb  
+
+from src.models.model import CNN
 from src.train import train
 from src.evaluate import test
-from src.models.model import CNN
-from torchvision.datasets import MNIST
-from src.utils.config import ROOT_PATH
-import datetime
+
 
 parser = argparse.ArgumentParser(description='PyTorch MNIST Example')
 
@@ -23,13 +30,16 @@ parser.add_argument('--test-batch-size', type=int, default=1000, metavar='N',
 parser.add_argument('--epochs', type=int, default=14, metavar='N',
                     help='number of epochs to train (default: 14)')
 
+parser.add_argument('--optim_type', type=str, default='SGD', choices=['SGD', 'Adam', 'AdamW', 'Adadelta'],
+                    help='optimizer choice (default: SGD)')
+
 parser.add_argument('--lr', type=float, default=1.0, metavar='LR',
                     help='learning rate (default: 1.0)')
 
 parser.add_argument('--gamma', type=float, default=0.7, metavar='M',
                     help='Learning rate step gamma (default: 0.7)')
 
-parser.add_argument('--no-cuda', action='store_true', default=True,
+parser.add_argument('--no-cuda', action='store_true', default=False,
                     help='disables CUDA training')
 
 parser.add_argument('--no-mps', action='store_true', default=False,
@@ -53,11 +63,6 @@ wandb.init(
     name=nowtime
 )
 
-# 直接使用wandb.config配置参数
-wandb.watch_called = False
-wandb.config.dataset = "MNIST"
-
-
 torch.manual_seed(args.seed)
 use_cuda = not args.no_cuda and torch.cuda.is_available()
 use_mps = not args.no_mps and torch.backends.mps.is_available()
@@ -72,7 +77,7 @@ print(f"device: {device}")
 
 train_kwargs = {'batch_size': args.batch_size}
 test_kwargs = {'batch_size': args.test_batch_size}
-if use_cuda:
+if use_cuda and platform.system() != 'Windows':
     cuda_kwargs = {'num_workers': 1,
                     'pin_memory': True,
                     'shuffle': True}
@@ -90,26 +95,27 @@ transform=transforms.Compose([
 train_dataset = MNIST(
     root='./data',
     train=True,
-    download=False,  # 设置为False，因为您手动下载了数据集
+    download=True,  # 设置为False，因为您手动下载了数据集
     transform=transform
 )
 
 test_dataset = MNIST(
     root='./data',
     train=False,
-    download=False,
+    download=True,
     transform=transform
 )
 
 # 数据加载器
-train_loader = torch.utils.data.DataLoader(train_dataset, **train_kwargs)
-test_loader = torch.utils.data.DataLoader(test_dataset, **test_kwargs)
+train_loader = DataLoader(train_dataset, **train_kwargs)
+test_loader = DataLoader(test_dataset, **test_kwargs)
 
 
 model = CNN().to(device)
 model.run_id = wandb.run.id
 model.best_metrics = -1.0
-optimizer = optim.Adadelta(model.parameters(), lr=args.lr)
+
+optimizer = torch.optim.__dict__[args.optim_type](params=model.parameters(), lr=args.lr)
 scheduler = StepLR(optimizer, step_size=1, gamma=args.gamma)
 
 
@@ -119,7 +125,7 @@ for epoch in range(1, args.epochs + 1):
     scheduler.step()
     if test_acc > model.best_metrics:
         model.best_metrics = test_acc
-        torch.save(model.state_dict(), ROOT_PATH + "/saved_models/mnist_cnn.pt")
+        torch.save(model.state_dict(), os.getcwd() + "/saved_models/mnist_cnn.pt")
 
     wandb.log({'epoch': epoch, 'test_acc': test_acc, 'best_test_acc': model.best_metrics})
 
