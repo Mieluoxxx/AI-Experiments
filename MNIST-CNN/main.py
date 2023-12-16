@@ -1,13 +1,16 @@
 import argparse
+import socket
 import wandb
 import torch
-from torchvision import datasets, transforms
+from torchvision import transforms
 from torch.optim.lr_scheduler import StepLR
 import torch.optim as optim
 from src.train import train
 from src.evaluate import test
 from src.models.model import CNN
+from torchvision.datasets import MNIST
 from src.utils.config import ROOT_PATH
+import datetime
 
 parser = argparse.ArgumentParser(description='PyTorch MNIST Example')
 
@@ -26,14 +29,11 @@ parser.add_argument('--lr', type=float, default=1.0, metavar='LR',
 parser.add_argument('--gamma', type=float, default=0.7, metavar='M',
                     help='Learning rate step gamma (default: 0.7)')
 
-parser.add_argument('--no-cuda', action='store_true', default=False,
+parser.add_argument('--no-cuda', action='store_true', default=True,
                     help='disables CUDA training')
 
 parser.add_argument('--no-mps', action='store_true', default=False,
                     help='disables macOS GPU training')
-
-parser.add_argument('--dry-run', action='store_true', default=False,
-                    help='quickly check a single pass')
 
 parser.add_argument('--seed', type=int, default=1, metavar='S',
                     help='random seed (default: 1)')
@@ -41,30 +41,24 @@ parser.add_argument('--seed', type=int, default=1, metavar='S',
 parser.add_argument('--log-interval', type=int, default=10, metavar='N',
                     help='how many batches to wait before logging training status')
 
-parser.add_argument('--save-model', action='store_true', default=True,
-                    help='For Saving the current Model')
-
 args = parser.parse_args()
 
-wandb.init(project="MNIST")
+# 初始化wandb，同时配置参数
+nowtime = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+wandb.init(
+    config=args,
+    project="MNIST",
+    notes=socket.gethostname(),
+    save_code=True,
+    name=nowtime
+)
+
+# 直接使用wandb.config配置参数
 wandb.watch_called = False
-config = wandb.config 
-config.architecture = "CNN"
-config.dataset = "MNIST"
-config.batch_size = args.batch_size
-config.test_batch_size = args.test_batch_size
-config.epochs = args.epochs
-config.lr = args.lr
-config.gamma = args.gamma
-config.no_cuda = args.no_cuda
-config.no_mps = args.no_mps
-config.dry_run = args.dry_run
-config.seed = args.seed
-config.log_interval = args.log_interval
-config.save_model = args.save_model
+wandb.config.dataset = "MNIST"
+
 
 torch.manual_seed(args.seed)
-
 use_cuda = not args.no_cuda and torch.cuda.is_available()
 use_mps = not args.no_mps and torch.backends.mps.is_available()
 if use_cuda:
@@ -91,22 +85,42 @@ transform=transforms.Compose([
     transforms.ToTensor(),
     transforms.Normalize((0.1307,), (0.3081,))
     ])
-train_dataset = datasets.MNIST(root=ROOT_PATH+'/data/', train=True, download=True, transform=transform)
-test_dataset = datasets.MNIST(root=ROOT_PATH+'/data/', train=False, download=True, transform=transform)
+
+# 创建MNIST数据集
+train_dataset = MNIST(
+    root='./data',
+    train=True,
+    download=False,  # 设置为False，因为您手动下载了数据集
+    transform=transform
+)
+
+test_dataset = MNIST(
+    root='./data',
+    train=False,
+    download=False,
+    transform=transform
+)
 
 # 数据加载器
 train_loader = torch.utils.data.DataLoader(train_dataset, **train_kwargs)
 test_loader = torch.utils.data.DataLoader(test_dataset, **test_kwargs)
 
-model = CNN().to(device)
-optimizer = optim.Adadelta(model.parameters(), lr=args.lr)
 
+model = CNN().to(device)
+model.run_id = wandb.run.id
+model.best_metrics = -1.0
+optimizer = optim.Adadelta(model.parameters(), lr=args.lr)
 scheduler = StepLR(optimizer, step_size=1, gamma=args.gamma)
+
 
 for epoch in range(1, args.epochs + 1):
     train(args, model, device, train_loader, optimizer, epoch)
-    test(model, device, test_loader)
+    test_acc = test(model, device, test_loader)
     scheduler.step()
+    if test_acc > model.best_metrics:
+        model.best_metrics = test_acc
+        torch.save(model.state_dict(), ROOT_PATH + "/saved_models/mnist_cnn.pt")
 
-if args.save_model:
-    torch.save(model.state_dict(), ROOT_PATH + "/saved_models/mnist_cnn.pt")
+    wandb.log({'epoch': epoch, 'test_acc': test_acc, 'best_test_acc': model.best_metrics})
+
+wandb.finish()

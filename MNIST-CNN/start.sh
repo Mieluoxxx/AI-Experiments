@@ -5,5 +5,4 @@ python main.py \
     --lr 1.0 \
     --gamma 0.7 \
     --seed 1 \
-    --log-interval 10 \
-    --save-model
+    --log-interval 10
