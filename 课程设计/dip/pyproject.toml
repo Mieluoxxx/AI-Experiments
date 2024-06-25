@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "mario-moving-object-detection"
+version = "0.1.0"
+description = ""
+authors = ["Mieluoxxx <weiyiding0@gmail.com>"]
+readme = "README.md"
+packages = [{include = "mario_moving_object_detection"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+streamlit = "^1.29.0"
+torch = "^2.1.2"
+ultralytics = "^8.0.227"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
