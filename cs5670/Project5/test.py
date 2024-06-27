@@ -26,7 +26,7 @@ data_dir = './data'
 
 # 加载测试数据集
 test_dataset = datasets.ImageFolder(data_dir + '/test', transform=transform)
-test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False, num_workers=4)
+test_loader = DataLoader(test_dataset, batch_size=804, shuffle=False, num_workers=4)
 
 # 定义模型
 class AlexNet(L.LightningModule):
